@@ -3,7 +3,7 @@ import { join } from 'path';
 import WebpackLicensePlugin from 'webpack-license-plugin';
 import { defineConstantsPlugin, getConfig, root } from './common';
 
-const externalPackages = ['sharp', 'tesseract.js', 'screenshot-desktop'];
+const externalPackages = ['tesseract.js', 'screenshot-desktop'];
 const externalEnteries = externalPackages.map((n) => [n, `commonjs ${n}`]);
 const externals = Object.fromEntries(externalEnteries);
 

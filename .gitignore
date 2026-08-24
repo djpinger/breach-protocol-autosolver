@@ -4,3 +4,4 @@ build
 !scripts/build
 debug
 out
+.toolchain

@@ -107,16 +107,23 @@ async function reduceFragmentsToResult(
   fragments: Fragment[],
   options: BreachProtocolOCROptions
 ) {
-  const pendingResults = fragments.map((fragment) => {
+  // Fragments share a single cloned sharp/libvips source image. Kicking off
+  // recognize() for all of them at once (Promise.all over an eagerly mapped
+  // array) races concurrent native operations against that shared instance,
+  // which this bundled libvips build can't handle and aborts the process
+  // over (VObject assertion failure, not a catchable JS error). Running them
+  // one at a time keeps native calls serialized.
+  const results = [];
+
+  for (const fragment of fragments) {
     if (fragment) {
       const threshold = getFixedThresholdFor(fragment.id, options);
 
-      return fragment.recognize(threshold);
+      results.push(await fragment.recognize(threshold));
+    } else {
+      results.push(null);
     }
-
-    return null;
-  });
-  const results = await Promise.all(pendingResults);
+  }
 
   return new BreachProtocolRecognitionResult(results);
 }

@@ -4,7 +4,8 @@ import {
   BreachProtocolMouseResolver,
   BreachProtocolResolver,
   BreachProtocolRobot,
-  SharpImageContainer,
+  convertBufferToFile,
+  ImageMagickImageContainer,
   WasmBreachProtocolRecognizer,
 } from '@/common/node';
 import {
@@ -26,7 +27,6 @@ import {
 } from '@/electron/common';
 import { copyFile, remove } from 'fs-extra';
 import { extname } from 'path';
-import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import { BreachProtocolSoundPlayer } from './sound-player';
 
@@ -190,7 +190,7 @@ export class BreachProtocolAutosolver {
         const dest = this.robot.getScreenShotPath('jpg');
         const buffer = input instanceof Buffer ? input : Buffer.from(input);
 
-        await sharp(buffer).toFormat('jpeg').toFile(dest);
+        await convertBufferToFile(buffer, dest);
 
         return dest;
       }
@@ -275,9 +275,8 @@ export class BreachProtocolAutosolver {
   }
 
   private async recognize() {
-    const image = sharp(this.fileName);
     const { downscaleSource, gameLang } = this.settings;
-    const container = await SharpImageContainer.create(image, {
+    const container = await ImageMagickImageContainer.create(this.fileName, {
       downscaleSource,
     });
     const recognizer = new WasmBreachProtocolRecognizer(gameLang);

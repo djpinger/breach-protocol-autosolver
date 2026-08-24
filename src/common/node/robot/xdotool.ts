@@ -1,5 +1,6 @@
 import { sleep } from '@/common';
 import * as k from '@/common/keyboard';
+import { execFile } from 'child_process';
 import {
   BreachProtocolRobot,
   BreachProtocolRobotKeys,
@@ -101,6 +102,28 @@ export class XDoToolRobot extends BreachProtocolRobot {
     const code = this.keys[key];
 
     return XDoToolRobot.VK_MAP.get(code).toString(16);
+  }
+
+  /**
+   * KDE Plasma's Wayland session does not let X11 clients (ImageMagick's
+   * `import`, scrot) read the compositor's framebuffer, so the inherited
+   * screenshot-desktop capture always fails there. Spectacle's background
+   * mode goes through the compositor's own screenshot path instead, so it
+   * works on both X11 and Wayland Plasma sessions.
+   */
+  override async captureScreen(screen: string = this.settings.activeDisplayId) {
+    await this.moveAway();
+
+    const filename = this.getScreenShotPath(this.settings.format);
+
+    await new Promise<void>((resolve, reject) => {
+      execFile('spectacle', ['-b', '-n', '-o', filename], (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    return filename;
   }
 
   async activateGameWindow() {

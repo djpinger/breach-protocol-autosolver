@@ -2,7 +2,6 @@ import { sleep } from '@/common';
 import * as k from '@/common/keyboard';
 import { execFile } from 'child_process';
 import { join } from 'path';
-import sanitize from 'sanitize-filename';
 import screenshot, { ScreenshotFormat } from 'screenshot-desktop';
 
 export interface RobotSettings {
@@ -96,8 +95,7 @@ export abstract class BreachProtocolRobot {
   }
 
   getScreenShotPath(ext: string) {
-    const now = new Date().toString();
-    const name = sanitize(now, { replacement: ' ' });
+    const name = new Date().toISOString().replace(/[:.]/g, '-');
 
     return join(this.settings.screenshotDir, `${name}.${ext}`);
   }

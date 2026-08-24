@@ -1,7 +1,7 @@
 import type {
   ResolverSettings,
   RobotSettings,
-  SharpImageContainerConfig,
+  ImageContainerConfig,
 } from '@/common/node';
 import type {
   BreachProtocolFragmentResults,
@@ -80,7 +80,7 @@ export type BreachProtocolCommands = (typeof COMMANDS)[number];
 
 export interface AppSettings
   extends RobotSettings,
-    Required<SharpImageContainerConfig>,
+    Required<ImageContainerConfig>,
     SoundPlayerConfig,
     KeyBindsConfig,
     ResolverSettings,

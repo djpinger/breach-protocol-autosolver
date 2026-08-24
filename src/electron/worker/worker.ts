@@ -1,8 +1,8 @@
 import {
   AutoHotkeyRobot,
   BreachProtocolRobot,
+  ImageMagickImageContainer,
   NirCmdRobot,
-  SharpImageContainer,
   WasmBreachProtocolRecognizer,
   XDoToolRobot,
 } from '@/common/node';
@@ -45,16 +45,15 @@ import { execSync } from 'child_process';
 import { ipcRenderer as ipc, IpcRendererEvent } from 'electron';
 import { join } from 'path';
 import { listDisplays, ScreenshotDisplayOutput } from 'screenshot-desktop';
-import sharp from 'sharp';
 import { BreachProtocolAutosolver } from './autosolver';
 import { nativeDialog } from './dialog';
 import { BreachProtocolSoundPlayer } from './sound-player';
 
 interface BreachProtocolFragments {
-  grid: BreachProtocolGridFragment<sharp.Sharp>;
-  daemons: BreachProtocolDaemonsFragment<sharp.Sharp>;
-  bufferSize: BreachProtocolBufferSizeFragment<sharp.Sharp>;
-  types: BreachProtocolTypesFragment<sharp.Sharp>;
+  grid: BreachProtocolGridFragment<string>;
+  daemons: BreachProtocolDaemonsFragment<string>;
+  bufferSize: BreachProtocolBufferSizeFragment<string>;
+  types: BreachProtocolTypesFragment<string>;
 }
 
 type AsyncRequestListener = (req: Request) => Promise<any>;
@@ -373,7 +372,6 @@ export class BreachProtocolWorker {
   }
 
   private async initTestThreshold(req: Request<string>) {
-    const instance = sharp(req.data);
     const {
       downscaleSource,
       filterRecognizerResults,
@@ -382,7 +380,7 @@ export class BreachProtocolWorker {
       extendedDaemonsAndTypesRecognitionRange,
       patch,
     } = this.settings;
-    const container = await SharpImageContainer.create(instance, {
+    const container = await ImageMagickImageContainer.create(req.data, {
       downscaleSource,
     });
     const recognizer = new WasmBreachProtocolRecognizer(gameLang);

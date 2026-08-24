@@ -1,11 +1,10 @@
 import {
-  SharpImageContainer,
+  ImageMagickImageContainer,
   WasmBreachProtocolRecognizer,
 } from '@/common/node';
 import type { BreachProtocolLanguage } from '@/core';
 import { AppSettings } from '@/electron/common';
 import { join } from 'path';
-import sharp from 'sharp';
 import registry from '../bp-registry/registry.json';
 import {
   BreachProtocolRawData,
@@ -175,8 +174,7 @@ async function recognizeRegistryEntry(
   { downscaleSource, ...settings }: Partial<AppSettings> = {}
 ) {
   const file = join('./src/core/bp-registry', entry.path);
-  const image = sharp(file);
-  const container = await SharpImageContainer.create(image, {
+  const container = await ImageMagickImageContainer.create(file, {
     downscaleSource,
   });
   const recognizer = new WasmBreachProtocolRecognizer(null);
