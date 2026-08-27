@@ -8,6 +8,18 @@ import {
   VK_KEYS,
 } from './robot';
 
+function commandExists(bin: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile('sh', ['-c', `command -v ${bin}`], (err) => resolve(!err));
+  });
+}
+
+function execFileAsync(bin: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    execFile(bin, args, (err) => (err ? reject(err) : resolve()));
+  });
+}
+
 export class XDoToolRobot extends BreachProtocolRobot {
   protected readonly binPath = 'xdotool';
 
@@ -105,23 +117,47 @@ export class XDoToolRobot extends BreachProtocolRobot {
   }
 
   /**
-   * KDE Plasma's Wayland session does not let X11 clients (ImageMagick's
-   * `import`, scrot) read the compositor's framebuffer, so the inherited
-   * screenshot-desktop capture always fails there. Spectacle's background
-   * mode goes through the compositor's own screenshot path instead, so it
-   * works on both X11 and Wayland Plasma sessions.
+   * No Wayland compositor lets X11 clients (ImageMagick's `import`, scrot)
+   * read its framebuffer, so the inherited ImageMagick-based capture only
+   * works under X11 - it's left untouched for that case. Under Wayland we
+   * dispatch to whichever native tool the running desktop actually
+   * supports:
+   *  - KDE Plasma: spectacle's background mode goes through the
+   *    compositor's own screenshot path.
+   *  - Sway/Hyprland/river and other wlroots-based compositors: grim,
+   *    which all of them support identically regardless of desktop name.
+   *  - GNOME: gnome-screenshot, where available. Recent GNOME versions
+   *    increasingly gate screenshots behind the xdg-desktop-portal, which
+   *    can pop an interactive permission dialog instead of capturing
+   *    silently - if that happens here, this needs a portal-based capture
+   *    instead.
+   * Anything else fails loudly with what was detected, rather than
+   * silently trying spectacle and failing with a cryptic ENOENT.
    */
   override async captureScreen(screen: string = this.settings.activeDisplayId) {
+    if (process.env.XDG_SESSION_TYPE !== 'wayland') {
+      return super.captureScreen(screen);
+    }
+
     await this.moveAway();
 
     const filename = this.getScreenShotPath(this.settings.format);
+    const desktop = (process.env.XDG_CURRENT_DESKTOP ?? '').toLowerCase();
 
-    await new Promise<void>((resolve, reject) => {
-      execFile('spectacle', ['-b', '-n', '-o', filename], (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    if (desktop.includes('kde')) {
+      await execFileAsync('spectacle', ['-b', '-n', '-o', filename]);
+    } else if (await commandExists('grim')) {
+      await execFileAsync('grim', [filename]);
+    } else if (desktop.includes('gnome') && (await commandExists('gnome-screenshot'))) {
+      await execFileAsync('gnome-screenshot', ['-f', filename]);
+    } else {
+      throw new Error(
+        `No supported screenshot method for Wayland desktop "${
+          process.env.XDG_CURRENT_DESKTOP ?? 'unknown'
+        }". Install spectacle (KDE), grim (Sway/Hyprland/wlroots), or ` +
+          'gnome-screenshot (GNOME), or run this under an X11 session.',
+      );
+    }
 
     return filename;
   }

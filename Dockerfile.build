@@ -1,0 +1,8 @@
+# Build-only image for breach-protocol-autosolver. Not the app's runtime -
+# just pins the toolchain (Node 16, matching package.json's engines field)
+# so building doesn't depend on whatever Node happens to be on the host.
+# The source is bind-mounted at run time (see build-in-docker.sh), so this
+# image only needs rebuilding when the toolchain itself changes.
+FROM docker.io/library/node:16-bullseye
+
+WORKDIR /app
